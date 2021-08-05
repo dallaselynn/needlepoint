@@ -18,7 +18,7 @@ defmodule Needlepoint do
 
   """
 
-  def tokenize(text, tokenizer \\ Needlepoint.Tokenizer.Simple) do
-    tokenizer.tokenize(text)
+  def tokenize(text, tokenizer \\ Needlepoint.Tokenizer.Simple, opts \\ []) do
+    tokenizer.tokenize(text, opts)
   end
 end

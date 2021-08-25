@@ -34,9 +34,10 @@ defmodule NeedlepointSnowballTest do
     assert SnowballStemmer.stem("knitting") == "knit"
   end
 
-  test "abeyance => abey" do
-    assert SnowballStemmer.stem("abeyance") == "abey"
-  end
+  # test "ignore stopwords" do
+  #   assert SnowballStemmer.stem("having") == "having"
+  #   assert SnowballStemmer.stem("having", ignore_stopwords: true) == "have"
+  # end
 
   test "snowball apostrophes" do
     assert SnowballStemmer.stem("'") == "'"
@@ -51,5 +52,18 @@ defmodule NeedlepointSnowballTest do
     assert SnowballStemmer.stem("'as'") == "as"
     assert SnowballStemmer.stem("a''") == "a'"
     assert SnowballStemmer.stem("aa'") == "aa"
+  end
+
+  @tag slow: true
+  test "all snowball pairs" do
+    # list is from http://snowball.tartarus.org/algorithms/english/diffs.txt
+    for line <- File.stream!("test/snowball_pairs.txt") do
+      [word, stemmed] = String.trim(line) |> String.split
+      if word in Needlepoint.stopwords(:snowball) do
+        assert SnowballStemmer.stem(word) == word
+      else
+        assert SnowballStemmer.stem(word) == stemmed
+      end
+    end
   end
 end

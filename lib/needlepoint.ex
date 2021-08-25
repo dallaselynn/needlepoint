@@ -22,6 +22,12 @@ defmodule Needlepoint do
     tokenizer.tokenize(text, opts)
   end
 
+  @doc """
+  Stem with a given stemmer.  Defaults to snowball.
+
+  TODO: document ignore_stopwords option.
+  TODO: pass stopwords instead of encoding per stemmer?
+  """
   def stem(text, stemmer \\ Needlepoint.Stem.SnowballStemmer) do
     stemmer.stem(text)
   end

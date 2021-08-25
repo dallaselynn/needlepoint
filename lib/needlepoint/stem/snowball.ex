@@ -57,7 +57,7 @@ defmodule Needlepoint.Stem.SnowballStemmer do
   @double_consanants ~w(bb dd ff gg mm nn pp rr tt)
   @valid_li_ending ~w(c d e g h k m n r t)
   @special_form_prefixes ~w(gener arsen commun)
-  @stopwords Needlepoint.stopwords()
+  @stopwords Needlepoint.stopwords(:snowball)
   @step0_suffixes ~w('s' 's ')
   @step1a_suffixes ~w(sses ied ies us ss s)
   @step1b_suffixes ~w(eedly ingly edly eed ing ed)
@@ -67,10 +67,7 @@ defmodule Needlepoint.Stem.SnowballStemmer do
     enci anci abli izer ator alli bli ogi li
   )
   @step3_suffixes ~w(ational tional alize icate iciti ative ical ness ful)
-  @step4_suffixes ~w(
-    ement ance ence able ible ment ant ent ism ate iti ous ive ize ion al er ic
-  )
-
+  @step4_suffixes ~w(ement ance ence able ible ment ant ent ism ate iti ous ive ize ion al er ic)
 
   @doc """
     Stem the word with the snowball stemmer.  Currently there is no option to
@@ -81,11 +78,10 @@ defmodule Needlepoint.Stem.SnowballStemmer do
       iex> alias Needlepoint.Stem.SnowballStemmer
       iex> SnowballStemmer.stem("running")
       "run"
-      iex> SnowballStemmer.stem("having")
-      "have"
+      iex> SnowballStemmer.stem("abeyance")
+      "abey"
   """
-  # def stem(word) when (String.length(word) <= 2) or (word in @stopwords), do: word
-  def stem(word) when is_map_key(@stopwords, word), do: word
+  def stem(word) when word in @stopwords, do: word
   def stem(word) when is_map_key(@special_words, word), do: Map.fetch!(@special_words, word)
   def stem(word), do: if String.length(word) <= 2, do: word, else: snowball(word)
 
@@ -299,22 +295,23 @@ defmodule Needlepoint.Stem.SnowballStemmer do
 
   defp step2({word, r1, r2}) do
     suffix =
-      Enum.find(@step2_suffixes,
-        fn x -> String.ends_with?(word, x) and String.ends_with?(r1, x) end
-      )
+      case Enum.find(@step2_suffixes, fn x -> String.ends_with?(word, x) end) do
+        nil -> nil
+        s -> if String.ends_with?(r1, s), do: s, else: nil
+      end
 
     case suffix do
       "tional" ->
-        word = String.slice(word, 0..-2)
-        r1 = String.slice(r1, 0..-2)
-        r2 = String.slice(r2, 0..-2)
+        word = String.slice(word, 0..-3)
+        r1 = String.slice(r1, 0..-3)
+        r2 = String.slice(r2, 0..-3)
 
         {word, r1, r2}
 
       suffix when suffix in ["enci", "anci", "abli"] ->
         word = String.slice(word, 0..-2) <> "e"
         r1 = if String.length(r1) >= 1, do: String.slice(r1, 0..-2) <> "e", else: ""
-        r2 = if String.length(r2) >= 1, do: String.slice(r1, 0..-2) <> "e", else: ""
+        r2 = if String.length(r2) >= 1, do: String.slice(r2, 0..-2) <> "e", else: ""
 
         {word, r1, r2}
 
@@ -397,13 +394,14 @@ defmodule Needlepoint.Stem.SnowballStemmer do
 
   def step3({word, r1, r2}) do
     suffix =
-      Enum.find(@step3_suffixes,
-        fn x -> String.ends_with?(word, x) and String.ends_with?(r1, x) end
-      )
+      case Enum.find(@step3_suffixes, fn x -> String.ends_with?(word, x) end) do
+        nil -> nil
+        s -> if String.ends_with?(r1, s), do: s, else: nil
+      end
 
     case suffix do
       "tional" ->
-        {String.slice(word,-2), String.slice(r1,-2), String.slice(r2,-2)}
+        {String.slice(word,0..-3), String.slice(r1,0..-3), String.slice(r2,0..-3)}
 
       "ational" ->
         word = String.replace_suffix(word, suffix, "ate")
@@ -428,7 +426,7 @@ defmodule Needlepoint.Stem.SnowballStemmer do
 
       "ative" ->
         if String.ends_with?(r2, "ative") do
-          {String.slice(word,-6), String.slice(r1,-6), String.slice(r2,-6)}
+          {String.slice(word,0..-6), String.slice(r1,0..-6), String.slice(r2,0..-6)}
         else
           {word, r1, r2}
         end
@@ -439,15 +437,16 @@ defmodule Needlepoint.Stem.SnowballStemmer do
 
   defp step4({word, r1, r2}) do
     suffix =
-      Enum.find(@step4_suffixes,
-        fn x -> String.ends_with?(word, x) and String.ends_with?(r2, x) end
-      )
+      case Enum.find(@step4_suffixes, fn x -> String.ends_with?(word, x) end) do
+        nil -> nil
+        s -> if String.ends_with?(r2, s), do: s, else: nil
+      end
 
     case suffix do
       nil -> {word, r1, r2}
       "ion" ->
         if String.at(word, -4) in ["s", "t"] do
-          {String.slice(word,-4), String.slice(r1,-4), String.slice(r2,-4)}
+          {String.slice(word,0..-4), String.slice(r1,0..-4), String.slice(r2,0..-4)}
         else
           {word, r1, r2}
         end
@@ -477,7 +476,5 @@ defmodule Needlepoint.Stem.SnowballStemmer do
       true ->
         {word, r1, r2}
     end
-
   end
-
 end

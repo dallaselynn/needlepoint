@@ -94,28 +94,18 @@ defmodule Needlepoint.Stem.SnowballStemmer do
       |> capitalize_y()
 
     {r1, r2} = initialize_regions(word)
-    IO.puts("starting with word #{word} r1 #{r1} r2 #{r2}")
 
     {stem, _, _} =
       {word, r1, r2}
       |> step0()
-      |> IO.inspect(label: "after step0")
       |> step1a()
-      |> IO.inspect(label: "after step1a")
       |> step1b()
-      |> IO.inspect(label: "after step1b")
       |> step1c()
-      |> IO.inspect(label: "after step1c")
       |> step2()
-      |> IO.inspect(label: "after step2")
       |> step3()
-      |> IO.inspect(label: "after step3")
       |> step4()
-      |> IO.inspect(label: "after step4")
       |> step5()
-      |> IO.inspect(label: "after step5")
 
-    IO.puts("replacing Y in #{word}")
     String.replace(stem, "Y", "y")
   end
 

@@ -3,7 +3,11 @@ defmodule NeedlepointTest do
 
   doctest Needlepoint
 
-  test "tokenizer defaults to simple" do
+  test "Needlepoint.tokenize/1" do
     assert Needlepoint.tokenize("A sentence.") == ["A", "sentence."]
+  end
+
+  test "Needlepoint.stem/1" do
+    assert Needlepoint.stem("generously") == "generous"
   end
 end

@@ -295,7 +295,7 @@ defmodule Needlepoint.Stem.SnowballStemmer do
 
   defp step2({word, r1, r2}) do
     suffix =
-      case Enum.find(@step2_suffixes, fn x -> String.ends_with?(word, x) end) do
+      case first_suffix_match(word, @step2_suffixes) do
         nil -> nil
         s -> if String.ends_with?(r1, s), do: s, else: nil
       end
@@ -394,7 +394,7 @@ defmodule Needlepoint.Stem.SnowballStemmer do
 
   def step3({word, r1, r2}) do
     suffix =
-      case Enum.find(@step3_suffixes, fn x -> String.ends_with?(word, x) end) do
+      case first_suffix_match(word, @step3_suffixes) do
         nil -> nil
         s -> if String.ends_with?(r1, s), do: s, else: nil
       end
@@ -437,7 +437,7 @@ defmodule Needlepoint.Stem.SnowballStemmer do
 
   defp step4({word, r1, r2}) do
     suffix =
-      case Enum.find(@step4_suffixes, fn x -> String.ends_with?(word, x) end) do
+      case first_suffix_match(word, @step4_suffixes) do
         nil -> nil
         s -> if String.ends_with?(r2, s), do: s, else: nil
       end

@@ -65,4 +65,21 @@ defmodule Needlepoint.Util do
       |> pad_sequence(n, opts)
       |> Stream.chunk_every(n, 1, :discard)
   end
+
+
+  @doc """
+  Check if a string is uppercased.
+
+  ## Examples
+
+      iex> Needlepoint.Util.is_upcase?("foo")
+      false
+
+      iex> Needlepoint.Util.is_upcase?("FOo")
+      false
+
+      iex> Needlepoint.Util.is_upcase?("FOO")
+      true
+  """
+  def is_upcase?(word), do: String.upcase(word) == word
 end

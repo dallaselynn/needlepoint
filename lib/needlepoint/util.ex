@@ -82,4 +82,37 @@ defmodule Needlepoint.Util do
       true
   """
   def is_upcase?(word), do: String.upcase(word) == word
+
+  @doc """
+  Check if a string is downcased.
+
+  ## Examples
+
+      iex> Needlepoint.Util.is_downcase?("foo")
+      true
+
+      iex> Needlepoint.Util.is_downcase?("FOo")
+      false
+
+      iex> Needlepoint.Util.is_downcase?("FOO")
+      false
+  """
+  def is_downcase?(word), do: String.downcase(word) == word
+
+
+  @doc """
+  Take the product of 2 enumerables, a simple version of
+  Python's itertools.product
+
+  ## Examples
+      iex> Needlepoint.Util.product([],[])
+      []
+
+      iex> Needlepoint.Util.product(["a","b"], ["x","y","z"])
+      [["a", "x"], ["a", "y"], ["a", "z"], ["b", "x"], ["b", "y"], ["b", "z"]]
+  """
+  def product(a,b) do
+    for x <- a, y <- b, do: [x, y]
+  end
+
 end

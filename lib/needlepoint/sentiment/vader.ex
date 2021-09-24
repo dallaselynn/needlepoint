@@ -240,25 +240,32 @@ defmodule Needlepoint.Sentiment.Vader do
   end
 
   def score_valence(valences, text) do
-
     valence_sum = Enum.sum(valences)
+    IO.puts("sum of sentiments #{valence_sum}")
     punct_emph_amplifier = punctuation_emphasis_adjustment(text)
     sum_s = if valence_sum > 0, do: valence_sum + punct_emph_amplifier, else: valence_sum - punct_emph_amplifier
+    IO.puts("sum after punct emph #{sum_s}")
     compound = normalize(sum_s)
+    IO.puts("compound is #{compound}")
 
     # discriminate between positive, negative and neutral sentiment scores
     sifted = sift_sentiment_scores(valences)
+    IO.puts("sifted is")
+    IO.inspect(sifted)
 
-    if sifted.pos_sum > abs(sifted.neg_sum), do: Map.update!(sifted, :pos_sum, &(&1 + punct_emph_amplifier))
-    if sifted.pos_sum < abs(sifted.neg_sum), do: Map.update!(sifted, :pos_sum, &(&1 - punct_emph_amplifier))
+    sifted =
+      if sifted.pos_sum > abs(sifted.neg_sum), do: Map.update!(sifted, :pos_sum, &(&1 + punct_emph_amplifier)), else: sifted
+
+    sifted =
+      if sifted.pos_sum < abs(sifted.neg_sum), do: Map.update!(sifted, :pos_sum, &(&1 - punct_emph_amplifier)), else: sifted
 
     total = Enum.sum([sifted.pos_sum, abs(sifted.neg_sum), sifted.neu_count])
 
     %{
-      compound: compound,
-      pos: abs(sifted.pos_sum / total),
-      neg: abs(sifted.neg_sum / total),
-      neu: abs(sifted.neu_count / total),
+      compound: Float.round(compound, 4),
+      pos: Float.round(abs(sifted.pos_sum / total), 3),
+      neg: Float.round(abs(sifted.neg_sum / total), 3),
+      neu: Float.round(abs(sifted.neu_count / total), 3)
     }
   end
 
@@ -304,14 +311,19 @@ defmodule Needlepoint.Sentiment.Vader do
   # get the valence for word at position idx that isn't a special zero case.
   def calculate_valence(lexicon, words, idx) do
     # if it's not here it should be 0 already.
-    word = String.downcase(Enum.at(words, idx))
-    initial_valence = Map.fetch!(lexicon, word)
+    word = Enum.at(words, idx)
+    IO.puts("calculating valence for word #{word} at idx #{idx}")
+    initial_valence = Map.fetch!(lexicon, String.downcase(word))
     has_caps_differential? = allcap_differential(words)
 
     initial_valence
+    |> IO.inspect(label: "initial valence")
     |> adjust_valence_for_caps(Util.is_upcase?(word), has_caps_differential?)
+    |> IO.inspect(label: "after caps adjustment")
     |> adjust_valence_for_previous_words(lexicon, words, idx, has_caps_differential?)
+    |> IO.inspect(label: "after previous words adjustment")
     |> adjust_valence_for_least(lexicon, words, idx)
+    |> IO.inspect(label: "after least adjustment")
   end
 
   # adjust valence for preceding "least" phrases and return the new valence.
@@ -343,25 +355,36 @@ defmodule Needlepoint.Sentiment.Vader do
   def adjust_valence_for_previous_words(valence, lexicon, words, idx, has_caps_differential?) do
     Enum.reduce(0..2, valence, fn start_i, acc ->
       has_previous_words? = idx > start_i
+      IO.puts("checking for #{idx} > #{start_i}: #{has_previous_words?}")
       prev_word = Enum.at(words, idx-(start_i+1))
+      IO.puts("checking lexicon for word at idx #{idx-(start_i+1)} #{prev_word}")
       previous_in_lexicon? = Map.has_key?(lexicon, String.downcase(prev_word))
 
       if has_previous_words? and not previous_in_lexicon? do
+        IO.puts("calling scalar_inc_dec(#{prev_word},#{acc}, #{has_caps_differential?}")
         s = scalar_inc_dec(prev_word, acc, has_caps_differential?)
+        IO.puts("s is #{s}")
         inc_dec_adjustment =
           cond do
             start_i == 1 and s != 0 ->
-              0.95
+              IO.puts("adding #{s*0.95} to #{acc}")
+              s * 0.95
             start_i == 2 and s != 0 ->
-              0.9
+              IO.puts("adding #{s*0.9} to #{acc}")
+              s * 0.9
             true ->
-              1
+              IO.puts("adding #{s} to #{acc}")
+              s
           end
 
-        updated_valence = (acc + (s * inc_dec_adjustment)) * never_check_adjustment(words, start_i, idx)
-        idioms_check_adjustment(updated_valence, start_i, words, idx)
+        updated_valence = (acc + inc_dec_adjustment) * never_check_adjustment(words, start_i, idx)
+        IO.puts("updated valence: #{updated_valence}")
+        final_valence = idioms_check_adjustment(updated_valence, start_i, words, idx)
+        IO.puts("after idioms check #{final_valence}")
+        final_valence
       else
-        valence
+        IO.puts("returning valence #{valence}")
+        acc
       end
     end)
   end

@@ -224,10 +224,11 @@ defmodule Needlepoint.Sentiment.Vader do
 
   # returns a map like %{"neg" => 0.0, "neu" => 1.0, "pos" => 0.0, "compound" => 0.0}
   def polarity_scores(text) do
+    IO.puts("\n\nDOING POLARITY FOR '#{text}'\n------------------------")
     words = words_and_emoticons(text)
     lexicon = load_lexicon()
 
-    Enum.map(0..length(words)-1, &valence(lexicon, words, &1))
+    Enum.with_index(words, fn _e, idx -> valence(lexicon, words, idx) end)
     |> IO.inspect(label: "valences")
     |> but_check(words)
     |> IO.inspect(label: "after but check")
@@ -257,7 +258,10 @@ defmodule Needlepoint.Sentiment.Vader do
       if sifted.pos_sum > abs(sifted.neg_sum), do: Map.update!(sifted, :pos_sum, &(&1 + punct_emph_amplifier)), else: sifted
 
     sifted =
-      if sifted.pos_sum < abs(sifted.neg_sum), do: Map.update!(sifted, :pos_sum, &(&1 - punct_emph_amplifier)), else: sifted
+      if sifted.pos_sum < abs(sifted.neg_sum), do: Map.update!(sifted, :neg_sum, &(&1 - punct_emph_amplifier)), else: sifted
+
+    IO.puts("after punct amplifier")
+    IO.inspect(sifted)
 
     total = Enum.sum([sifted.pos_sum, abs(sifted.neg_sum), sifted.neu_count])
 
@@ -302,6 +306,7 @@ defmodule Needlepoint.Sentiment.Vader do
 
   # get the valence of the word in words at position idx
   def valence(lexicon, words, idx) do
+    IO.puts("checking valence for word at #{idx}")
     case is_valence_zero?(lexicon, words, idx) do
       true -> 0
       _ -> calculate_valence(lexicon, words, idx)
@@ -356,7 +361,7 @@ defmodule Needlepoint.Sentiment.Vader do
     Enum.reduce(0..2, valence, fn start_i, acc ->
       has_previous_words? = idx > start_i
       IO.puts("checking for #{idx} > #{start_i}: #{has_previous_words?}")
-      prev_word = Enum.at(words, idx-(start_i+1))
+      prev_word = Enum.at(words, idx-(start_i+1), "")
       IO.puts("checking lexicon for word at idx #{idx-(start_i+1)} #{prev_word}")
       previous_in_lexicon? = Map.has_key?(lexicon, String.downcase(prev_word))
 
@@ -462,7 +467,8 @@ defmodule Needlepoint.Sentiment.Vader do
   # it is "kind" and the next word is "of" or if it is in the booster dict
   # or if it is not in the lexicon.
   def is_valence_zero?(lexicon, words, idx) do
-    word = String.downcase(Enum.at(words, idx))
+    IO.puts("checking for zero with word #{Enum.at(words, idx)}")
+    word = String.downcase(Enum.at(words, idx, ""))
     next_word = String.downcase(Enum.at(words, idx+1, ""))
 
     Map.has_key?(@booster, word) or (word == "kind" and next_word == "of") or (not Map.has_key?(lexicon, word))

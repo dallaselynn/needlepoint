@@ -80,8 +80,11 @@ defmodule Needlepoint.Util do
 
       iex> Needlepoint.Util.is_upcase?("FOO")
       true
+
+      iex> Needlepoint.Util.is_upcase?(":D")
+      true
   """
-  def is_upcase?(word), do: String.upcase(word) == word
+  def is_upcase?(word), do: Regex.match?(~r/[[:alpha:]]+/, word) and String.upcase(word) == word
 
   @doc """
   Check if a string is downcased.
@@ -96,8 +99,11 @@ defmodule Needlepoint.Util do
 
       iex> Needlepoint.Util.is_downcase?("FOO")
       false
+
+      iex> Needlepoint.Util.is_downcase?(":)")
+      true
   """
-  def is_downcase?(word), do: String.downcase(word) == word
+  def is_downcase?(word), do: not Regex.match?(~r/[[:alpha:]]+/, word) or String.downcase(word) == word
 
 
   @doc """

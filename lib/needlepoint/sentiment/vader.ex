@@ -336,9 +336,9 @@ defmodule Needlepoint.Sentiment.Vader do
     word2_is_not_at_or_very? = word2 not in ["at", "very"]
 
     cond do
-      word1_not_in_lexicon? and word1_is_least? and idx > 1 and word2_is_not_at_or_very? ->
-        valence * @n_scalar
-      word1_not_in_lexicon? and word1_is_least? ->
+      idx > 1 and word1_not_in_lexicon? and word1_is_least? ->
+        if word2_is_not_at_or_very?, do: valence * @n_scalar, else: valence
+      word1_not_in_lexicon? and word1_is_least? and (idx > 0) ->
         valence * @n_scalar
       true ->
         valence

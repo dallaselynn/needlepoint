@@ -49,7 +49,7 @@ defmodule SentimentVaderTest do
     "The script is not fantastic, but the acting is decent and the cinematography is EXCELLENT!" => %{compound: 0.7565, neg: 0.092, neu: 0.607, pos: 0.301},
     "Roger Dodger is one of the most compelling variations on this theme." => %{compound: 0.2944, neg: 0.0, neu: 0.834, pos: 0.166},
     "Roger Dodger is one of the least compelling variations on this theme." => %{compound: -0.1695, neg: 0.132, neu: 0.868, pos: 0.0},
-    #"Roger Dodger is at least compelling as a variation on the theme." => %{compound: 0.2263, neg: 0.0, neu: 0.84, pos: 0.16},
+    "Roger Dodger is at least compelling as a variation on the theme." => %{compound: 0.2263, neg: 0.0, neu: 0.84, pos: 0.16},
     "they fall in love with the product" => %{compound: 0.6369, neg: 0.0, neu: 0.588, pos: 0.412},
     "but then it breaks" => %{compound: 0.0, neg: 0.0, neu: 1.0, pos: 0.0},
     "usually around the time the 90 day warranty expires" => %{compound: 0.0, neg: 0.0, neu: 1.0, pos: 0.0},

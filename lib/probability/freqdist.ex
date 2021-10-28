@@ -166,4 +166,107 @@ defmodule Needlepoint.Probability.FreqDist do
     )
     |> FreqDist.new()
   end
+
+  @doc """
+  Return the total number of sample outcomes that have been recorded.
+
+  ## Examples
+    iex> FreqDist.n(FreqDist.new("aabbccdd"))
+    8
+  """
+  def n(%FreqDist{} = fd) do
+    Enum.sum(Map.values(fd.samples))
+  end
+
+  @doc """
+  Return the total number of sample values ("bins") that have counts greater than zero.
+  Called `B` in nltk.
+
+  ## Examples
+    iex> FreqDist.bins(FreqDist.new(%{"a" => 0, "b" => 1}))
+    1
+  """
+  def bins(%FreqDist{} = fd) do
+    length(Enum.filter(Map.values(fd.samples), &(&1 > 0)))
+  end
+
+
+  @doc """
+  Return a list of all samples that occur once (hapax legomena)
+
+  ## Examples
+    iex> FreqDist.hapaxes(FreqDist.new(%{"a" => 0, "b" => 1, "c" => 2}))
+    ["b"]
+  """
+  def hapaxes(%FreqDist{} = fd) do
+    fd.samples
+      |> Enum.filter(fn {_,v} -> v == 1 end)
+      |> Map.new
+      |> Map.keys
+  end
+
+  @doc """
+  Return the dictionary mapping r to Nr, the number of samples with frequency r, where Nr > 0.
+
+  ## Examples
+    iex> FreqDist.r_nr(FreqDist.new(%{"a" => 0, "b" => 1, "c" => 2, "d" => 2}))
+    %{0 => 1, 1 => 1, 2 => 2}
+  """
+  def r_nr(%FreqDist{} = fd) do
+    fd.samples
+    |> Map.values()
+    |> Enum.reduce(Map.new, fn x,acc -> Map.update(acc, x, 1, fn existing -> existing + 1 end) end)
+  end
+
+  @doc """
+  Return the frequency of a given sample.
+
+  The frequency of a sample is defined as the count of that sample divided by the
+  total number of sample outcomes that have been recorded by
+  this FreqDist.  The count of a sample is defined as the number of times that
+  sample outcome was recorded by this `FreqDist`.
+
+  Frequencies are always real numbers in the range [0, 1]
+
+  ## Examples
+    iex> FreqDist.freq(FreqDist.new(%{"a" => 0, "b" => 1, "c" => 2, "d" => 2}), "z")
+    0.0
+
+    iex> FreqDist.freq(FreqDist.new(%{"a" => 0, "b" => 1, "c" => 2, "d" => 2}), "a")
+    0.0
+
+    iex> FreqDist.freq(FreqDist.new(%{"a" => 0, "b" => 1, "c" => 2, "d" => 2}), "b")
+    0.2
+  """
+  def freq(%FreqDist{} = fd, sample) do
+    n = FreqDist.n(fd)
+    cond do
+      n == 0 -> 0
+      n -> Map.get(fd.samples, sample, 0) / n
+    end
+  end
+
+  @doc """
+  Return the sample with the greatest number of outcomes.
+
+  If two or more samples have the same number of outcomes,
+  return one of them; which sample is returned is undefined.
+
+  If no outcomes have occurred in this frequency distribution, return nil.
+
+  ## Examples
+    iex> FreqDist.max(FreqDist.new())
+    nil
+
+    iex> FreqDist.max(FreqDist.new(%{"a" => 0, "b" => 1, "c" => 2}))
+    "c"
+  """
+  def max(%FreqDist{} = fd) do
+    try do
+      {sample, _count} = Enum.max_by(fd.samples, fn {_x,y} -> y end)
+      sample
+    rescue
+      Enum.EmptyError -> nil
+    end
+  end
 end

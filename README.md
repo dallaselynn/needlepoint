@@ -1,6 +1,18 @@
 # Needlepoint
 
-**TODO: Add description**
+Some NLP Algorithms in Elixir.
+
+
+Currently available:
+
+- [A Port of NTLK's FreqDist class](`Needlepoint.Probability.FreqDist`)
+
+- [Snowball Stemmer](`Needlepoint.Stem.SnowballStemmer`)
+
+- [Treebank Tokenizer](`Needlepoint.Tokenizer.Treebank`)
+
+- [VADER Sentiment Analysis](`Needlepoint.Sentiment.Vader`)
+
 
 ## Installation
 
@@ -14,8 +26,3 @@ def deps do
   ]
 end
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/needlepoint](https://hexdocs.pm/needlepoint).
-

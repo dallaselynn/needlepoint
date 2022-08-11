@@ -34,11 +34,6 @@ defmodule NeedlepointSnowballTest do
     assert SnowballStemmer.stem("knitting") == "knit"
   end
 
-  # test "ignore stopwords" do
-  #   assert SnowballStemmer.stem("having") == "having"
-  #   assert SnowballStemmer.stem("having", ignore_stopwords: true) == "have"
-  # end
-
   test "snowball apostrophes" do
     assert SnowballStemmer.stem("'") == "'"
     assert SnowballStemmer.stem("''") == "''"

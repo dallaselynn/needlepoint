@@ -4,7 +4,7 @@ defmodule NeedlepointTest do
   doctest Needlepoint
 
   test "Needlepoint.tokenize/1" do
-    assert Needlepoint.tokenize("A sentence.") == ["A", "sentence."]
+    assert Needlepoint.tokenize("A sentence.") == ["A", "sentence", "."]
   end
 
   test "Needlepoint.stem/1" do

@@ -70,17 +70,20 @@ defmodule Needlepoint.Stem.SnowballStemmer do
   @step4_suffixes ~w(ement ance ence able ible ment ant ent ism ate iti ous ive ize ion al er ic)
 
   @doc """
-    Stem the word with the snowball stemmer.  Currently there is no option to
-    ignore stopwords like the nltk version.
+  Stem the word with the snowball stemmer.  Currently there is no option to
+  ignore stopwords like the nltk version.
 
-    ## Examples
+  ## Examples
 
       iex> alias Needlepoint.Stem.SnowballStemmer
+
       iex> SnowballStemmer.stem("running")
       "run"
+
       iex> SnowballStemmer.stem("abeyance")
       "abey"
   """
+  @impl Needlepoint.Stemmer
   def stem(word) when word in @stopwords, do: word
   def stem(word) when is_map_key(@special_words, word), do: Map.fetch!(@special_words, word)
   def stem(word), do: if String.length(word) <= 2, do: word, else: snowball(word)
@@ -218,7 +221,7 @@ defmodule Needlepoint.Stem.SnowballStemmer do
     end
   end
 
-  def step1b({word, r1, r2}) do
+  defp step1b({word, r1, r2}) do
     case first_suffix_match(word, @step1b_suffixes) do
       nil -> {word, r1, r2}
       suffix when suffix in ["eed", "eedly"] ->
@@ -270,7 +273,7 @@ defmodule Needlepoint.Stem.SnowballStemmer do
     end
   end
 
-  def step1c({word, r1, r2}) do
+  defp step1c({word, r1, r2}) do
     case String.length(word) > 2 and String.ends_with?(word, ["y","Y"]) and String.at(word, -2) not in @vowels do
       true ->
         word = String.slice(word, 0..-2) <> "i"
@@ -382,7 +385,7 @@ defmodule Needlepoint.Stem.SnowballStemmer do
     end
   end
 
-  def step3({word, r1, r2}) do
+  defp step3({word, r1, r2}) do
     suffix =
       case first_suffix_match(word, @step3_suffixes) do
         nil -> nil

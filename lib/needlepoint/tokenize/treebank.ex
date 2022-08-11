@@ -1,6 +1,21 @@
 defmodule Needlepoint.Tokenizer.Treebank do
   @moduledoc """
-  A port of the NLTK Treebank Tokenizer.
+  A port of the [NLTK Treebank Tokenizer](https://www.nltk.org/_modules/nltk/tokenize/treebank.html)
+
+  ## Examples
+
+      iex(1)> alias Needlepoint.Tokenizer.Treebank
+      Needlepoint.Tokenizer.Treebank
+
+      iex(2)> Treebank.tokenize("Good muffins cost $3.88 in New York.  Please buy me two of them. Thanks.")
+      ["Good", "muffins", "cost", "$", "3.88", "in", "New", "York.", "Please", "buy",
+       "me", "two", "of", "them.", "Thanks", "."]
+
+      iex(3)> Treebank.tokenize("They'll save and invest more.")
+      ["They", "'ll", "save", "and", "invest", "more", "."]
+
+      iex(4)> Treebank.tokenize("hi, my name can't hello,")
+      ["hi", ",", "my", "name", "ca", "n't", "hello", ","]
   """
   @behaviour Needlepoint.Tokenizer
 
@@ -53,6 +68,7 @@ defmodule Needlepoint.Tokenizer.Treebank do
     [~r/(?i) ('t)(?#X)(was)\b/, " \\1 \\2 "],
   ]
 
+  @impl Needlepoint.Tokenizer
   def tokenize(text, opts \\ []) do
     convert_parentheses? = Keyword.get(opts, :convert_parentheses, false)
 

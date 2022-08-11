@@ -2,9 +2,8 @@ defmodule Needlepoint do
   @moduledoc """
   NLP Experiments With Elixir
 
-  The `Needlepoint` library is a collection of NLP
-  functions for Elixir using the `Nx` library
-  ecosystem.
+  The `Needlepoint` library is a collection of NLP functions for Elixir, generally ported
+  from sPacy or NLTK Python libraries.
   """
 
   @doc """
@@ -12,29 +11,30 @@ defmodule Needlepoint do
 
   ## Examples
 
-      iex> alias Needlepoint.Tokenizer.Treebank
-      iex> Needlepoint.tokenize("A sentence of words.", Treebank)
+      iex> Needlepoint.tokenize("A sentence of words.")
       ["A", "sentence", "of", "words", "."]
-
   """
-
-  def tokenize(text, tokenizer \\ Needlepoint.Tokenizer.Simple, opts \\ []) do
+  @spec tokenize(String.t(), module(), []) :: [String.t()]
+  def tokenize(text, tokenizer \\ Needlepoint.Tokenizer.Treebank, opts \\ []) do
     tokenizer.tokenize(text, opts)
   end
 
   @doc """
   Stem with a given stemmer.  Defaults to snowball.
 
-  TODO: document ignore_stopwords option.
-  TODO: pass stopwords instead of encoding per stemmer?
+  ## Examples
+
+      iex> Needlepoint.stem("sentence")
+      "sentenc"
   """
+  @spec stem(String.t(), module()) :: String.t()
   def stem(text, stemmer \\ Needlepoint.Stem.SnowballStemmer) do
     stemmer.stem(text)
   end
 
-  # TODO: make a spec - corpus is an atom.
-  # make or document a list of possible corpus choices
-  # is corpus a good name for this variable?
+  @doc false
   def stopwords(), do: stopwords(:nltk)
+  @doc false
+  @spec stopwords(:nltk | :snowball) :: [String.t()]
   def stopwords(corpus), do: Needlepoint.Stopwords.words(corpus)
 end

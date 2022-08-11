@@ -215,7 +215,7 @@ defmodule Needlepoint.Sentiment.Vader do
   ## Functions from SentimentIntensityAnalyzer
 
   # convert lexicon file to a map of %{word => measure}
-  def load_lexicon() do
+  defp load_lexicon() do
     Path.join(:code.priv_dir(:needlepoint), "vader_lexicon.txt") |>
     File.stream!
     |> Stream.map(fn x -> String.split(x, "\t", trim: true) |> Enum.take(2) end)
@@ -223,15 +223,15 @@ defmodule Needlepoint.Sentiment.Vader do
   end
 
   @doc """
-    Return a float for sentiment strength based on the input text.
-    Positive values are positive valence, negative value are negative
-    valence.
+  Return a float for sentiment strength based on the input text.
+  Positive values are positive valence, negative value are negative
+  valence.
 
-    ## Examples
+  ## Examples
 
-      iex> alias Needlepoint.Sentiment.Vader
       iex> Vader.polarity_scores("Shut the hell up!")
       %{compound: -0.7088, neg: 0.62, neu: 0.38, pos: 0.0}
+
       iex> Vader.polarity_scores("Yes, please.")
       %{compound: 0.6124, neg: 0.0, neu: 0.0, pos: 1.0}
   """

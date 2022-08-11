@@ -7,7 +7,20 @@ defmodule Needlepoint.MixProject do
       version: "0.1.0",
       elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      description: description(),
+      package: package(),
+      deps: deps(),
+
+      # Docs
+      name: "Needlepoint",
+      source_url: "https://github.com/dallaselynn/needlepoint",
+      homepage_url: "https://hexdocs.pm/needlepoint",
+      docs: [
+        main: "readme",
+        extras: [
+          "README.md"
+        ]
+      ]
     ]
   end
 
@@ -23,8 +36,20 @@ defmodule Needlepoint.MixProject do
     [
       {:statistics, "~> 0.6.2"},
       {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", branch: "main", sparse: "nx"},
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:ex_doc, "~> 0.27", only: :dev, runtime: false},
+    ]
+  end
+
+  defp description() do
+    "A collection of NLP algorithms."
+  end
+
+  defp package() do
+    [
+      maintainers: ["Dallas Lynn"],
+      files: ~w(lib priv .formatter.exs mix.exs README* LICENSE* src test),
+      licenses: ["Apache-2.0"],
+      links: %{"GitHub" => "https://github.com/dallaselynn/needlepoint"}
     ]
   end
 end

@@ -34,9 +34,7 @@ defmodule Needlepoint.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:statistics, "~> 0.6.2"},
-      {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", branch: "main", sparse: "nx"},
-      {:ex_doc, "~> 0.27", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.27", only: :dev, runtime: false}
     ]
   end
 
@@ -47,7 +45,7 @@ defmodule Needlepoint.MixProject do
   defp package() do
     [
       maintainers: ["Dallas Lynn"],
-      files: ~w(lib priv .formatter.exs mix.exs README* LICENSE* src test),
+      files: ~w(lib priv .formatter.exs mix.exs README* LICENSE* test),
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => "https://github.com/dallaselynn/needlepoint"}
     ]

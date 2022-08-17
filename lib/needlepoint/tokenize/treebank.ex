@@ -15,9 +15,10 @@ defmodule Needlepoint.Tokenizer.Treebank do
     [~r/([:,])$/, " \\1 "],
     [~r/\.\.\./, " ... "],
     [~r/[;@\\#\\$%&]/, " \\g{0} "],
-    [~r/([^\.])(\.)([\]\)}>"']*)\s*$/, "\\1 \\2\\3 "], # Handles the final period.
+    # Handles the final period.
+    [~r/([^\.])(\.)([\]\)}>"']*)\s*$/, "\\1 \\2\\3 "],
     [~r/[?!]/, " \\g{0} "],
-    [~r/([^'])' /, "\\1 ' "],
+    [~r/([^'])' /, "\\1 ' "]
   ]
 
   @parens_brackets [[~r/[\]\[\(\)\{\}<>]/, " \\g{0} "]]
@@ -28,7 +29,7 @@ defmodule Needlepoint.Tokenizer.Treebank do
     [~r/\[/, "-LSB-"],
     [~r/\]/, "-RSB-"],
     [~r/\{/, "-LCB-"],
-    [~r/\}/, "-RCB-"],
+    [~r/\}/, "-RCB-"]
   ]
 
   @double_dashes [[~r/--/, " -- "]]
@@ -37,7 +38,7 @@ defmodule Needlepoint.Tokenizer.Treebank do
     [~r/"/, " '' "],
     [~r/(\S)(\'\')/, "\\1 \\2 "],
     [~r/([^' ])('[sS]|'[mM]|'[dD]|') /, "\\1 \\2 "],
-    [~r/([^' ])('ll|'LL|'re|'RE|'ve|'VE|n't|N'T) /, "\\1 \\2 "],
+    [~r/([^' ])('ll|'LL|'re|'RE|'ve|'VE|n't|N'T) /, "\\1 \\2 "]
   ]
 
   @macintyre_contractions [
@@ -50,27 +51,28 @@ defmodule Needlepoint.Tokenizer.Treebank do
     [~r/(?i)\b(more)(?#X)('n)\b/, " \\1 \\2 "],
     [~r/(?i)\b(wan)(?#X)(na)\s/, " \\1 \\2 "],
     [~r/(?i) ('t)(?#X)(is)\b/, " \\1 \\2 "],
-    [~r/(?i) ('t)(?#X)(was)\b/, " \\1 \\2 "],
+    [~r/(?i) ('t)(?#X)(was)\b/, " \\1 \\2 "]
   ]
 
   def tokenize(text, opts \\ []) do
     convert_parentheses? = Keyword.get(opts, :convert_parentheses, false)
 
     text
-      |> substitute(@starting_quotes)
-      |> substitute(@punctuation)
-      |> substitute(@parens_brackets)
-      |> substitute(@convert_parentheses, convert_parentheses?)
-      |> substitute(@double_dashes)
-      |> then(&(" " <> &1 <> " "))
-      |> substitute(@ending_quotes)
-      |> substitute(@macintyre_contractions)
-      |> String.split()
+    |> substitute(@starting_quotes)
+    |> substitute(@punctuation)
+    |> substitute(@parens_brackets)
+    |> substitute(@convert_parentheses, convert_parentheses?)
+    |> substitute(@double_dashes)
+    |> then(&(" " <> &1 <> " "))
+    |> substitute(@ending_quotes)
+    |> substitute(@macintyre_contractions)
+    |> String.split()
   end
 
   defp substitute(text, regexes), do: substitute(text, regexes, true)
   defp substitute(text, _regexes, false), do: text
+
   defp substitute(text, regexes, true) do
-    Enum.reduce(regexes, text, fn x, text -> Regex.replace(Enum.at(x,0), text, Enum.at(x,1)) end)
+    Enum.reduce(regexes, text, fn x, text -> Regex.replace(Enum.at(x, 0), text, Enum.at(x, 1)) end)
   end
 end

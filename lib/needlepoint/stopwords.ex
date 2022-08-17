@@ -176,8 +176,8 @@ defmodule Needlepoint.Stopwords do
   wouldn
   wouldn't)
 
-# from the snowball site: http://snowball.tartarus.org/algorithms/english/stop.txt
-@snowball ~w(
+  # from the snowball site: http://snowball.tartarus.org/algorithms/english/stop.txt
+  @snowball ~w(
 i
 me
 my
@@ -357,5 +357,4 @@ very
 
   def words(:nltk), do: @nltk
   def words(:snowball), do: @snowball
-
 end

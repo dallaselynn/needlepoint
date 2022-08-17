@@ -3,5 +3,5 @@ defmodule Needlepoint.Stemmer do
   A processing interface for removing morphological affixes from words.  This process is known as stemming.
   """
 
-  @callback stem(String.t) :: String.t
+  @callback stem(String.t()) :: String.t()
 end

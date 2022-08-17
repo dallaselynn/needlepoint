@@ -19,21 +19,21 @@ defmodule Needlepoint.Util do
   """
   # TODO: should this return a stream like the nltk version converts to an interator?
   def pad_sequence(sequence, n), do: pad_sequence(sequence, n, [])
-  def pad_sequence(sequence, _n, opts) when length(opts) == 0, do: sequence
+  def pad_sequence(sequence, _n, opts) when opts == [], do: sequence
+
   def pad_sequence(sequence, n, opts) do
     pad_left = Keyword.get(opts, :pad_left, false)
     pad_right = Keyword.get(opts, :pad_right, false)
 
     s1 =
       if pad_left do
-        List.duplicate(Keyword.get(opts, :left_pad_symbol), n-1) ++ sequence
+        List.duplicate(Keyword.get(opts, :left_pad_symbol), n - 1) ++ sequence
       else
         sequence
       end
 
     if pad_right do
-      s1 ++ List.duplicate(Keyword.get(opts, :right_pad_symbol), n-1)
-
+      s1 ++ List.duplicate(Keyword.get(opts, :right_pad_symbol), n - 1)
     else
       s1
     end
@@ -60,12 +60,12 @@ defmodule Needlepoint.Util do
       [["<s>", 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, "</s>"]]
   """
   def ngrams(sequence, n), do: ngrams(sequence, n, [])
+
   def ngrams(sequence, n, opts) do
     sequence
-      |> pad_sequence(n, opts)
-      |> Stream.chunk_every(n, 1, :discard)
+    |> pad_sequence(n, opts)
+    |> Stream.chunk_every(n, 1, :discard)
   end
-
 
   @doc """
   Check if a string is uppercased.
@@ -103,8 +103,8 @@ defmodule Needlepoint.Util do
       iex> Needlepoint.Util.is_downcase?(":)")
       true
   """
-  def is_downcase?(word), do: not Regex.match?(~r/[[:alpha:]]+/, word) or String.downcase(word) == word
-
+  def is_downcase?(word),
+    do: not Regex.match?(~r/[[:alpha:]]+/, word) or String.downcase(word) == word
 
   @doc """
   Take the product of 2 enumerables, a simple version of
@@ -117,8 +117,7 @@ defmodule Needlepoint.Util do
       iex> Needlepoint.Util.product(["a","b"], ["x","y","z"])
       [["a", "x"], ["a", "y"], ["a", "z"], ["b", "x"], ["b", "y"], ["b", "z"]]
   """
-  def product(a,b) do
+  def product(a, b) do
     for x <- a, y <- b, do: [x, y]
   end
-
 end

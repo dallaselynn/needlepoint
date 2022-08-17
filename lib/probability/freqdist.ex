@@ -55,6 +55,7 @@ defmodule Needlepoint.Probability.FreqDist do
 
   @doc "Make a new empty `FreqDict`"
   def new(), do: %FreqDist{}
+
   @doc """
   Make a new `FreqDict` from a string, list, map or another `FreqDist`
 
@@ -71,17 +72,17 @@ defmodule Needlepoint.Probability.FreqDist do
     %Needlepoint.Probability.FreqDist{samples: %{"a" => 4, "b" => 2}}
   """
   def new(samples) when is_binary(samples) do
-    samples = samples |> String.graphemes |> Enum.frequencies
+    samples = samples |> String.graphemes() |> Enum.frequencies()
 
     %FreqDist{samples: samples}
   end
+
   def new(%FreqDist{} = fd), do: %FreqDist{samples: fd.samples}
   def new(samples) when is_map(samples), do: %FreqDist{samples: samples}
-  def new(samples), do: %FreqDist{samples: samples |> Enum.frequencies}
-
+  def new(samples), do: %FreqDist{samples: samples |> Enum.frequencies()}
 
   @doc "List all counts from the most common to the least."
-  def most_common(%FreqDist{} = fd), do: Enum.sort(fd.samples, &(elem(&1,1) > elem(&2,1)))
+  def most_common(%FreqDist{} = fd), do: Enum.sort(fd.samples, &(elem(&1, 1) > elem(&2, 1)))
   @doc "List n counts from the most common to the least."
   def most_common(%FreqDist{} = fd, n), do: most_common(fd) |> Enum.take(n)
 
@@ -102,7 +103,7 @@ defmodule Needlepoint.Probability.FreqDist do
     number, elements() will ignore it.
   """
   def elements(%FreqDist{} = fd) do
-    Enum.map(fd.samples, fn {key,count} -> List.duplicate(key, count) end) |> List.flatten
+    Enum.map(fd.samples, fn {key, count} -> List.duplicate(key, count) end) |> List.flatten()
   end
 
   @doc """
@@ -110,6 +111,7 @@ defmodule Needlepoint.Probability.FreqDist do
   """
   def update(%FreqDist{} = fd, samples) do
     fd2 = FreqDist.new(samples)
+
     Map.merge(fd.samples, fd2.samples, fn _k, v1, v2 -> v1 + v2 end)
     |> FreqDist.new()
   end
@@ -162,7 +164,7 @@ defmodule Needlepoint.Probability.FreqDist do
     Map.merge(
       Map.take(fd.samples, common),
       Map.take(fd2.samples, common),
-      fn _k, v1, v2 -> min(v1,v2) end
+      fn _k, v1, v2 -> min(v1, v2) end
     )
     |> FreqDist.new()
   end
@@ -190,7 +192,6 @@ defmodule Needlepoint.Probability.FreqDist do
     length(Enum.filter(Map.values(fd.samples), &(&1 > 0)))
   end
 
-
   @doc """
   Return a list of all samples that occur once (hapax legomena)
 
@@ -200,9 +201,9 @@ defmodule Needlepoint.Probability.FreqDist do
   """
   def hapaxes(%FreqDist{} = fd) do
     fd.samples
-      |> Enum.filter(fn {_,v} -> v == 1 end)
-      |> Map.new
-      |> Map.keys
+    |> Enum.filter(fn {_, v} -> v == 1 end)
+    |> Map.new()
+    |> Map.keys()
   end
 
   @doc """
@@ -215,7 +216,9 @@ defmodule Needlepoint.Probability.FreqDist do
   def r_nr(%FreqDist{} = fd) do
     fd.samples
     |> Map.values()
-    |> Enum.reduce(Map.new, fn x,acc -> Map.update(acc, x, 1, fn existing -> existing + 1 end) end)
+    |> Enum.reduce(Map.new(), fn x, acc ->
+      Map.update(acc, x, 1, fn existing -> existing + 1 end)
+    end)
   end
 
   @doc """
@@ -240,6 +243,7 @@ defmodule Needlepoint.Probability.FreqDist do
   """
   def freq(%FreqDist{} = fd, sample) do
     n = FreqDist.n(fd)
+
     cond do
       n == 0 -> 0
       n -> Map.get(fd.samples, sample, 0) / n
@@ -263,7 +267,7 @@ defmodule Needlepoint.Probability.FreqDist do
   """
   def max(%FreqDist{} = fd) do
     try do
-      {sample, _count} = Enum.max_by(fd.samples, fn {_x,y} -> y end)
+      {sample, _count} = Enum.max_by(fd.samples, fn {_x, y} -> y end)
       sample
     rescue
       Enum.EmptyError -> nil

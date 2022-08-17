@@ -58,7 +58,8 @@ defmodule NeedlepointSnowballTest do
   test "all snowball pairs" do
     # list is from http://snowball.tartarus.org/algorithms/english/diffs.txt
     for line <- File.stream!("test/snowball_pairs.txt") do
-      [word, stemmed] = String.trim(line) |> String.split
+      [word, stemmed] = String.trim(line) |> String.split()
+
       if word in Needlepoint.stopwords(:snowball) do
         assert SnowballStemmer.stem(word) == word
       else

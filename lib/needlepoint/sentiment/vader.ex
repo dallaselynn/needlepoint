@@ -141,10 +141,11 @@ defmodule Needlepoint.Sentiment.Vader do
 
   # determine if input contains negated words, return true or false
   defp negated(words, include_nt \\ true) do
-    has_neg_word = Enum.find_value(words, fn x ->
-      (String.downcase(x) in @negate) or
-      (include_nt and String.contains?(x, "n't"))
-    end)
+    has_neg_word =
+      Enum.find_value(words, fn x ->
+        String.downcase(x) in @negate or
+          (include_nt and String.contains?(x, "n't"))
+      end)
 
     case has_neg_word do
       true -> true
@@ -153,20 +154,25 @@ defmodule Needlepoint.Sentiment.Vader do
   end
 
   # Normalize the score to be between -1 and 1 using an alpha that approximates the max expected value
-  defp normalize(score, alpha \\ 15), do: score / :math.sqrt((score * score) + alpha)
+  defp normalize(score, alpha \\ 15), do: score / :math.sqrt(score * score + alpha)
 
   # Check if the preceding words increase, decrease, or negate/nullify the valence
   # make sure to lower case the word.
   defp scalar_inc_dec(word, valence, is_cap_diff?) do
     case Map.get(@booster, String.downcase(word)) do
-      nil -> 0.0
+      nil ->
+        0.0
+
       scalar ->
         scalar = if valence < 0, do: -scalar, else: scalar
+
         cond do
           Util.is_upcase?(word) and is_cap_diff? and valence > 0 ->
             scalar + @c_incr
+
           Util.is_upcase?(word) and is_cap_diff? and valence < 0 ->
             scalar - @c_incr
+
           true ->
             scalar
         end
@@ -188,11 +194,11 @@ defmodule Needlepoint.Sentiment.Vader do
 
     acc = Map.new()
 
-    Util.product(@punc_list, words) |>
-      Enum.reduce(acc, fn x, map -> Map.put(map, List.to_string(x), tl(x)) end)
+    Util.product(@punc_list, words)
+    |> Enum.reduce(acc, fn x, map -> Map.put(map, List.to_string(x), tl(x)) end)
 
-    Util.product(words, @punc_list) |>
-      Enum.reduce(acc, fn x, map -> Map.put(map, List.to_string(x), hd(x)) end)
+    Util.product(words, @punc_list)
+    |> Enum.reduce(acc, fn x, map -> Map.put(map, List.to_string(x), hd(x)) end)
   end
 
   # swap out punctated words with their words_plus_punc versions.
@@ -200,14 +206,15 @@ defmodule Needlepoint.Sentiment.Vader do
     words_punc_map = words_plus_punc(text)
 
     String.split(text)
-    |> Enum.reject(&String.length(&1) < 2)
+    |> Enum.reject(&(String.length(&1) < 2))
     |> Enum.map(&Map.get(words_punc_map, &1, &1))
   end
 
   # TODO: this should probably be called like 'has_allcap_differential?' or something
   # Check whether some words in the input are ALL CAPS but not all of them
   defp allcap_differential(words) do
-    Enum.any?(words, &Util.is_upcase?(&1)) and Enum.any?(words, fn x -> not Util.is_upcase?(x) end)
+    Enum.any?(words, &Util.is_upcase?(&1)) and
+      Enum.any?(words, fn x -> not Util.is_upcase?(x) end)
   end
 
   ## END SentiText functions.
@@ -216,8 +223,8 @@ defmodule Needlepoint.Sentiment.Vader do
 
   # convert lexicon file to a map of %{word => measure}
   def load_lexicon() do
-    Path.join(:code.priv_dir(:needlepoint), "vader_lexicon.txt") |>
-    File.stream!
+    Path.join(:code.priv_dir(:needlepoint), "vader_lexicon.txt")
+    |> File.stream!()
     |> Stream.map(fn x -> String.split(x, "\t", trim: true) |> Enum.take(2) end)
     |> Enum.into(%{}, fn x -> {hd(x), String.to_float(List.last(x))} end)
   end
@@ -235,7 +242,12 @@ defmodule Needlepoint.Sentiment.Vader do
       iex> Vader.polarity_scores("Yes, please.")
       %{compound: 0.6124, neg: 0.0, neu: 0.0, pos: 1.0}
   """
-  @spec polarity_scores(String.t) :: %{compound: float(), neg: float(), neu: float(), pos: float()}
+  @spec polarity_scores(String.t()) :: %{
+          compound: float(),
+          neg: float(),
+          neu: float(),
+          pos: float()
+        }
   def polarity_scores(text) do
     words = words_and_emoticons(text)
     lexicon = load_lexicon()
@@ -246,24 +258,33 @@ defmodule Needlepoint.Sentiment.Vader do
   end
 
   # compute the final scores and return a map with keys neg, neu, pos and compound
-  defp score_valence(valences, _text) when length(valences) == 0 do
+  defp score_valence(valences, _text) when valences == [] do
     %{neg: 0.0, neu: 0.0, pos: 0.0, compound: 0.0}
   end
 
   defp score_valence(valences, text) do
     valence_sum = Enum.sum(valences)
     punct_emph_amplifier = punctuation_emphasis_adjustment(text)
-    sum_s = if valence_sum > 0, do: valence_sum + punct_emph_amplifier, else: valence_sum - punct_emph_amplifier
+
+    sum_s =
+      if valence_sum > 0,
+        do: valence_sum + punct_emph_amplifier,
+        else: valence_sum - punct_emph_amplifier
+
     compound = normalize(sum_s)
 
     # discriminate between positive, negative and neutral sentiment scores
     sifted = sift_sentiment_scores(valences)
 
     sifted =
-      if sifted.pos_sum > abs(sifted.neg_sum), do: Map.update!(sifted, :pos_sum, &(&1 + punct_emph_amplifier)), else: sifted
+      if sifted.pos_sum > abs(sifted.neg_sum),
+        do: Map.update!(sifted, :pos_sum, &(&1 + punct_emph_amplifier)),
+        else: sifted
 
     sifted =
-      if sifted.pos_sum < abs(sifted.neg_sum), do: Map.update!(sifted, :neg_sum, &(&1 - punct_emph_amplifier)), else: sifted
+      if sifted.pos_sum < abs(sifted.neg_sum),
+        do: Map.update!(sifted, :neg_sum, &(&1 - punct_emph_amplifier)),
+        else: sifted
 
     total = Enum.sum([sifted.pos_sum, abs(sifted.neg_sum), sifted.neu_count])
 
@@ -287,7 +308,8 @@ defmodule Needlepoint.Sentiment.Vader do
           x > 0 -> Map.update(acc, :pos_sum, 0, fn ev -> ev + (x + 1) end)
           x == 0 -> Map.update(acc, :neu_count, 0, fn ev -> ev + 1 end)
         end
-    end)
+      end
+    )
   end
 
   # add emphasis from exclamation points and question marks and return the new sum
@@ -296,6 +318,7 @@ defmodule Needlepoint.Sentiment.Vader do
     ep_amplifier = Enum.count_until(String.graphemes(text), fn x -> x == "!" end, 4) * 0.292
     # now check for question mark adjustment
     qm_count = Enum.count(String.graphemes(text), fn x -> x == "?" end)
+
     qm_amplifier =
       cond do
         qm_count > 3 -> 0.96
@@ -308,7 +331,7 @@ defmodule Needlepoint.Sentiment.Vader do
 
   # get the valence of the word in words at position idx
   defp valence(lexicon, words, idx) do
-     case is_valence_zero?(lexicon, words, idx) do
+    case is_valence_zero?(lexicon, words, idx) do
       true -> 0
       _ -> calculate_valence(lexicon, words, idx)
     end
@@ -325,12 +348,12 @@ defmodule Needlepoint.Sentiment.Vader do
     |> adjust_valence_for_caps(Util.is_upcase?(word), has_caps_differential?)
     |> adjust_valence_for_previous_words(lexicon, words, idx, has_caps_differential?)
     |> adjust_valence_for_least(lexicon, words, idx)
-   end
+  end
 
   # adjust valence for preceding "least" phrases and return the new valence.
   defp adjust_valence_for_least(valence, lexicon, words, idx) do
-    word1 = String.downcase(Enum.at(words, idx-1))
-    word2 = String.downcase(Enum.at(words, idx-2))
+    word1 = String.downcase(Enum.at(words, idx - 1))
+    word2 = String.downcase(Enum.at(words, idx - 2))
     word1_not_in_lexicon? = not Map.has_key?(lexicon, word1)
     word1_is_least? = word1 == "least"
     word2_is_not_at_or_very? = word2 not in ["at", "very"]
@@ -338,8 +361,10 @@ defmodule Needlepoint.Sentiment.Vader do
     cond do
       idx > 1 and word1_not_in_lexicon? and word1_is_least? ->
         if word2_is_not_at_or_very?, do: valence * @n_scalar, else: valence
-      word1_not_in_lexicon? and word1_is_least? and (idx > 0) ->
+
+      word1_not_in_lexicon? and word1_is_least? and idx > 0 ->
         valence * @n_scalar
+
       true ->
         valence
     end
@@ -347,26 +372,31 @@ defmodule Needlepoint.Sentiment.Vader do
 
   # adjust valence for capitalization - and return the new valence.
   defp adjust_valence_for_caps(valence, is_upcase?, has_caps_differential?)
+
   defp adjust_valence_for_caps(valence, true, true) do
     if valence > 0, do: valence + @c_incr, else: valence - @c_incr
   end
+
   defp adjust_valence_for_caps(valence, _, _), do: valence
 
   # change valence based on surrounding words and return the new valence - skip the first three words.
   defp adjust_valence_for_previous_words(valence, lexicon, words, idx, has_caps_differential?) do
     Enum.reduce(0..2, valence, fn start_i, acc ->
       has_previous_words? = idx > start_i
-      prev_word = Enum.at(words, idx-(start_i+1), "")
+      prev_word = Enum.at(words, idx - (start_i + 1), "")
       previous_in_lexicon? = Map.has_key?(lexicon, String.downcase(prev_word))
 
       if has_previous_words? and not previous_in_lexicon? do
         s = scalar_inc_dec(prev_word, acc, has_caps_differential?)
+
         inc_dec_adjustment =
           cond do
             start_i == 1 and s != 0 ->
               s * 0.95
+
             start_i == 2 and s != 0 ->
               s * 0.9
+
             true ->
               s
           end
@@ -381,32 +411,46 @@ defmodule Needlepoint.Sentiment.Vader do
 
   defp but_check(valences, words) do
     case Enum.find_index(words, fn x -> String.downcase(x) == "but" end) do
-      nil -> valences
-      but_idx -> Enum.map(Enum.with_index(valences),
-        fn {elem,idx} ->
-          cond do
-            idx < but_idx ->
-              elem * 0.5
-            idx > but_idx ->
-              elem * 1.5
-            true ->
-              elem
+      nil ->
+        valences
+
+      but_idx ->
+        Enum.map(
+          Enum.with_index(valences),
+          fn {elem, idx} ->
+            cond do
+              idx < but_idx ->
+                elem * 0.5
+
+              idx > but_idx ->
+                elem * 1.5
+
+              true ->
+                elem
+            end
           end
-        end)
+        )
     end
   end
 
   # adjust valence for some known idioms
   defp idioms_check_adjustment(valence, start_i, words, idx)
   defp idioms_check_adjustment(valence, start_i, _words, _idx) when start_i != 2, do: valence
+
   defp idioms_check_adjustment(valence, start_i, words, idx) when start_i == 2 do
-    onezero = Enum.join([Enum.at(words, idx-1), Enum.at(words, idx)], " ")
-    twoonezero = Enum.join([Enum.at(words, idx-2), Enum.at(words, idx-1), Enum.at(words, idx)], " ")
-    twoone = Enum.join([Enum.at(words, idx-2), Enum.at(words, idx-1)], " ")
-    threetwoone = Enum.join([Enum.at(words, idx-3), Enum.at(words, idx-2), Enum.at(words, idx-1)], " ")
-    threetwo = Enum.join([Enum.at(words, idx-3), Enum.at(words, idx-2)], " ")
-    zeroone = "#{Enum.at(words,idx)} #{Enum.at(words,idx + 1)}"
-    zeroonetwo = "#{Enum.at(words,idx)} #{Enum.at(words,idx + 1)} #{Enum.at(words,idx + 2)}"
+    onezero = Enum.join([Enum.at(words, idx - 1), Enum.at(words, idx)], " ")
+
+    twoonezero =
+      Enum.join([Enum.at(words, idx - 2), Enum.at(words, idx - 1), Enum.at(words, idx)], " ")
+
+    twoone = Enum.join([Enum.at(words, idx - 2), Enum.at(words, idx - 1)], " ")
+
+    threetwoone =
+      Enum.join([Enum.at(words, idx - 3), Enum.at(words, idx - 2), Enum.at(words, idx - 1)], " ")
+
+    threetwo = Enum.join([Enum.at(words, idx - 3), Enum.at(words, idx - 2)], " ")
+    zeroone = "#{Enum.at(words, idx)} #{Enum.at(words, idx + 1)}"
+    zeroonetwo = "#{Enum.at(words, idx)} #{Enum.at(words, idx + 1)} #{Enum.at(words, idx + 2)}"
 
     sequences = [onezero, twoonezero, twoone, threetwoone, threetwo, zeroone, zeroonetwo]
 
@@ -414,6 +458,7 @@ defmodule Needlepoint.Sentiment.Vader do
       cond do
         Map.has_key?(@booster, threetwo) or Map.has_key?(@booster, twoone) ->
           @b_decr
+
         true ->
           0
       end
@@ -423,29 +468,38 @@ defmodule Needlepoint.Sentiment.Vader do
 
   # return the valence multiplier based on various "never" phrasings.
   defp never_check_adjustment(words, start_i, idx)
+
   defp never_check_adjustment(words, 0, idx) do
-    if negated([Enum.at(words, idx-1)]), do: @n_scalar, else: 1.0
+    if negated([Enum.at(words, idx - 1)]), do: @n_scalar, else: 1.0
   end
+
   defp never_check_adjustment(words, 1, idx) do
     cond do
-      Enum.at(words, idx-2) == "never" and Enum.at(words, idx-1) in ["so", "this"] ->
+      Enum.at(words, idx - 2) == "never" and Enum.at(words, idx - 1) in ["so", "this"] ->
         1.5
-      negated([Enum.at(words, idx-2)]) ->
+
+      negated([Enum.at(words, idx - 2)]) ->
         @n_scalar
+
       true ->
         1.0
     end
   end
+
   defp never_check_adjustment(words, 2, idx) do
     cond do
-      (Enum.at(words, idx-3) == "never" and Enum.at(words,idx-2) in ["so", "this"]) or Enum.at(words,idx-1) in ["so","this"] ->
+      (Enum.at(words, idx - 3) == "never" and Enum.at(words, idx - 2) in ["so", "this"]) or
+          Enum.at(words, idx - 1) in ["so", "this"] ->
         1.25
-      negated([Enum.at(words,idx-3)]) ->
+
+      negated([Enum.at(words, idx - 3)]) ->
         @n_scalar
+
       true ->
         1.0
     end
   end
+
   defp never_check_adjustment(_words, _start_i, _idx), do: 1.0
 
   # valence should be zero for the word at idx in the list of words if
@@ -453,8 +507,9 @@ defmodule Needlepoint.Sentiment.Vader do
   # or if it is not in the lexicon.
   defp is_valence_zero?(lexicon, words, idx) do
     word = String.downcase(Enum.at(words, idx, ""))
-    next_word = String.downcase(Enum.at(words, idx+1, ""))
+    next_word = String.downcase(Enum.at(words, idx + 1, ""))
 
-    Map.has_key?(@booster, word) or (word == "kind" and next_word == "of") or (not Map.has_key?(lexicon, word))
+    Map.has_key?(@booster, word) or (word == "kind" and next_word == "of") or
+      not Map.has_key?(lexicon, word)
   end
 end

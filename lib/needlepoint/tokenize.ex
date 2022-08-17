@@ -6,5 +6,5 @@ defmodule Needlepoint.Tokenizer do
   pieces (`tokens`)
   """
 
-  @callback tokenize(String.t, Keyword.t) :: [String.t]
+  @callback tokenize(String.t(), Keyword.t()) :: [String.t()]
 end

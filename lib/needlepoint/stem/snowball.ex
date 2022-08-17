@@ -83,7 +83,7 @@ defmodule Needlepoint.Stem.SnowballStemmer do
   """
   def stem(word) when word in @stopwords, do: word
   def stem(word) when is_map_key(@special_words, word), do: Map.fetch!(@special_words, word)
-  def stem(word), do: if String.length(word) <= 2, do: word, else: snowball(word)
+  def stem(word), do: if(String.length(word) <= 2, do: word, else: snowball(word))
 
   defp snowball(word) do
     # the initial steps just modify the word, these take and return a word.
@@ -109,23 +109,39 @@ defmodule Needlepoint.Stem.SnowballStemmer do
     String.replace(stem, "Y", "y")
   end
 
-  defp normalize_apostrophes(word), do: String.replace(word, ~r/[\x{2019}\x{2018}\x{201B}]/u, "\x27")
+  defp normalize_apostrophes(word),
+    do: String.replace(word, ~r/[\x{2019}\x{2018}\x{201B}]/u, "\x27")
 
   defp skip_leading_apostrophe(word) do
-    if String.starts_with?(word, "\x27") do String.slice(word, 1..-1) else word end
+    if String.starts_with?(word, "\x27") do
+      String.slice(word, 1..-1)
+    else
+      word
+    end
   end
 
   # "Set initial y, or y after a vowel, to Y"
   defp capitalize_y(word) do
     word
-      |> String.graphemes()
-      |> Enum.with_index()
-      |> Enum.map_join("",
-        fn
-          {"y", 0} -> "Y"
-          {"y", idx} -> if String.at(word, idx - 1) in @vowels do "Y" else "y" end
-          {letter, _idx} -> letter
-        end)
+    |> String.graphemes()
+    |> Enum.with_index()
+    |> Enum.map_join(
+      "",
+      fn
+        {"y", 0} ->
+          "Y"
+
+        {"y", idx} ->
+          if String.at(word, idx - 1) in @vowels do
+            "Y"
+          else
+            "y"
+          end
+
+        {letter, _idx} ->
+          letter
+      end
+    )
   end
 
   defp is_special_form?(word), do: String.starts_with?(word, @special_form_prefixes)
@@ -133,55 +149,53 @@ defmodule Needlepoint.Stem.SnowballStemmer do
   # Define a short syllable in a word as either (a) a vowel followed by a non-vowel other than w, x or Y
   # and preceded by a non-vowel, or * (b) a vowel at the beginning of the word followed by a non-vowel.
   defp has_short_syllable?(word, r1) do
-    (
-      String.length(r1) == 0 and
-      String.length(word) >= 3 and
-      String.at(word, -1) not in @vowels and
-      not String.contains?(String.at(word, -1), ["w","x","Y"]) and
-      String.at(word, -2) in @vowels and
-      String.at(word, -3) not in @vowels
-    )
-      or
-    (
-      String.length(r1) == 0 and
-      String.length(word) == 2 and
-      String.at(word, 0) in @vowels and
-      String.at(word, 1) not in @vowels
-    )
+    (String.length(r1) == 0 and
+       String.length(word) >= 3 and
+       String.at(word, -1) not in @vowels and
+       not String.contains?(String.at(word, -1), ["w", "x", "Y"]) and
+       String.at(word, -2) in @vowels and
+       String.at(word, -3) not in @vowels) or
+      (String.length(r1) == 0 and
+         String.length(word) == 2 and
+         String.at(word, 0) in @vowels and
+         String.at(word, 1) not in @vowels)
   end
 
   # for some string - return index or nil
   defp first_non_vowel_following_vowel(word) do
-    Enum.to_list(1..String.length(word)-1)
-    |> Enum.find(
-      fn x ->
-        String.at(word, x) not in @vowels and String.at(word, x-1) in @vowels
-      end
-    )
+    Enum.to_list(1..(String.length(word) - 1))
+    |> Enum.find(fn x ->
+      String.at(word, x) not in @vowels and String.at(word, x - 1) in @vowels
+    end)
   end
 
   defp region_after_first_non_vowel_following_vowel(word) do
     case first_non_vowel_following_vowel(word) do
       nil -> ""
-      idx -> String.slice(word, idx+1..-1)
+      idx -> String.slice(word, (idx + 1)..-1)
     end
   end
 
-  defp first_suffix_match(word, suffixes), do: Enum.find(suffixes, fn x -> String.ends_with?(word, x) end)
+  defp first_suffix_match(word, suffixes),
+    do: Enum.find(suffixes, fn x -> String.ends_with?(word, x) end)
 
   defp strip_first_suffix_match(word, suffixes) do
     Enum.reduce_while(suffixes, word, fn x, acc ->
-      if String.ends_with?(acc, x), do: {:halt, String.replace_suffix(acc, x, "")}, else: {:cont, acc}
+      if String.ends_with?(acc, x),
+        do: {:halt, String.replace_suffix(acc, x, "")},
+        else: {:cont, acc}
     end)
   end
 
   defp initialize_r1(word, is_special_form)
+
   defp initialize_r1(word, true) do
     cond do
       String.starts_with?(word, ["gener", "arsen"]) -> String.slice(word, 5..-1)
       String.starts_with?(word, "commun") -> String.slice(word, 6..-1)
     end
   end
+
   defp initialize_r1(word, false), do: region_after_first_non_vowel_following_vowel(word)
 
   defp initialize_regions(word) do
@@ -202,30 +216,47 @@ defmodule Needlepoint.Stem.SnowballStemmer do
   defp step1a({word, r1, r2}) do
     case first_suffix_match(word, @step1a_suffixes) do
       "sses" ->
-        {String.slice(word,0..-3), String.slice(r1,0..-3), String.slice(r2,0..-3)}
-      suffix when suffix in ["ied", "ies"]  ->
-        if String.length(word)-3 > 1 do
-          {String.slice(word,0..-3), String.slice(r1,0..-3), String.slice(r2,0..-3)}
+        {String.slice(word, 0..-3), String.slice(r1, 0..-3), String.slice(r2, 0..-3)}
+
+      suffix when suffix in ["ied", "ies"] ->
+        if String.length(word) - 3 > 1 do
+          {String.slice(word, 0..-3), String.slice(r1, 0..-3), String.slice(r2, 0..-3)}
         else
-          {String.slice(word,0..-2), String.slice(r1,0..-2), String.slice(r2,0..-2)}
+          {String.slice(word, 0..-2), String.slice(r1, 0..-2), String.slice(r2, 0..-2)}
         end
+
       "s" ->
-        case String.slice(word, 0..-3) |> String.graphemes() |> Enum.find(fn x -> x in @vowels end) do
+        case String.slice(word, 0..-3)
+             |> String.graphemes()
+             |> Enum.find(fn x -> x in @vowels end) do
           nil -> {word, r1, r2}
-          _idx -> {String.slice(word,0..-2), String.slice(r1,0..-2), String.slice(r2,0..-2)}
+          _idx -> {String.slice(word, 0..-2), String.slice(r1, 0..-2), String.slice(r2, 0..-2)}
         end
-      _ -> {word, r1, r2}
+
+      _ ->
+        {word, r1, r2}
     end
   end
 
   def step1b({word, r1, r2}) do
     case first_suffix_match(word, @step1b_suffixes) do
-      nil -> {word, r1, r2}
+      nil ->
+        {word, r1, r2}
+
       suffix when suffix in ["eed", "eedly"] ->
         if String.ends_with?(r1, suffix) do
           word = String.replace_suffix(word, suffix, "ee")
-          r1 = if String.length(r1) >= String.length(suffix), do: String.replace_suffix(r1, suffix, "ee"), else: ""
-          r2 = if String.length(r2) >= String.length(suffix), do: String.replace_suffix(r2, suffix, "ee"), else: ""
+
+          r1 =
+            if String.length(r1) >= String.length(suffix),
+              do: String.replace_suffix(r1, suffix, "ee"),
+              else: ""
+
+          r2 =
+            if String.length(r2) >= String.length(suffix),
+              do: String.replace_suffix(r2, suffix, "ee"),
+              else: ""
+
           {word, r1, r2}
         else
           {word, r1, r2}
@@ -234,8 +265,12 @@ defmodule Needlepoint.Stem.SnowballStemmer do
       suffix ->
         idx = String.length(suffix) + 1
 
-        case String.slice(word, 0..-idx) |> String.graphemes() |> Enum.find(fn x -> x in @vowels end) do
-          nil -> {word, r1, r2}
+        case String.slice(word, 0..-idx)
+             |> String.graphemes()
+             |> Enum.find(fn x -> x in @vowels end) do
+          nil ->
+            {word, r1, r2}
+
           _vowel_found ->
             word = String.slice(word, 0..-idx)
             r1 = String.slice(r1, 0..-idx)
@@ -271,13 +306,15 @@ defmodule Needlepoint.Stem.SnowballStemmer do
   end
 
   def step1c({word, r1, r2}) do
-    case String.length(word) > 2 and String.ends_with?(word, ["y","Y"]) and String.at(word, -2) not in @vowels do
+    case String.length(word) > 2 and String.ends_with?(word, ["y", "Y"]) and
+           String.at(word, -2) not in @vowels do
       true ->
         word = String.slice(word, 0..-2) <> "i"
         r1 = if String.length(r1) >= 1, do: String.slice(r1, 0..-2) <> "i", else: ""
         r2 = if String.length(r2) >= 1, do: String.slice(r2, 0..-2) <> "i", else: ""
 
         {word, r1, r2}
+
       false ->
         {word, r1, r2}
     end
@@ -314,22 +351,46 @@ defmodule Needlepoint.Stem.SnowballStemmer do
 
       suffix when suffix in ["izer", "ization"] ->
         word = String.replace_suffix(word, suffix, "ize")
-        r1 = if String.length(r1) >= String.length(suffix), do: String.replace_suffix(r1, suffix, "ize"), else: ""
-        r2 = if String.length(r2) >= String.length(suffix), do: String.replace_suffix(r2, suffix, "ize"), else: ""
+
+        r1 =
+          if String.length(r1) >= String.length(suffix),
+            do: String.replace_suffix(r1, suffix, "ize"),
+            else: ""
+
+        r2 =
+          if String.length(r2) >= String.length(suffix),
+            do: String.replace_suffix(r2, suffix, "ize"),
+            else: ""
 
         {word, r1, r2}
 
       suffix when suffix in ["ational", "ation", "ator"] ->
         word = String.replace_suffix(word, suffix, "ate")
-        r1 = if String.length(r1) >= String.length(suffix), do: String.replace_suffix(r1, suffix, "ate"), else: ""
-        r2 = if String.length(r2) >= String.length(suffix), do: String.replace_suffix(r2, suffix, "ate"), else: "e"
+
+        r1 =
+          if String.length(r1) >= String.length(suffix),
+            do: String.replace_suffix(r1, suffix, "ate"),
+            else: ""
+
+        r2 =
+          if String.length(r2) >= String.length(suffix),
+            do: String.replace_suffix(r2, suffix, "ate"),
+            else: "e"
 
         {word, r1, r2}
 
       suffix when suffix in ["alism", "aliti", "alli"] ->
         word = String.replace_suffix(word, suffix, "al")
-        r1 = if String.length(r1) >= String.length(suffix), do: String.replace_suffix(r1, suffix, "al"), else: ""
-        r2 = if String.length(r2) >= String.length(suffix), do: String.replace_suffix(r2, suffix, "al"), else: ""
+
+        r1 =
+          if String.length(r1) >= String.length(suffix),
+            do: String.replace_suffix(r1, suffix, "al"),
+            else: ""
+
+        r2 =
+          if String.length(r2) >= String.length(suffix),
+            do: String.replace_suffix(r2, suffix, "al"),
+            else: ""
 
         {word, r1, r2}
 
@@ -342,43 +403,70 @@ defmodule Needlepoint.Stem.SnowballStemmer do
 
       suffix when suffix in ["ousli", "ousness"] ->
         word = String.replace_suffix(word, suffix, "ous")
-        r1 = if String.length(r1) >= String.length(suffix), do: String.replace_suffix(r1, suffix, "ous"), else: ""
-        r2 = if String.length(r2) >= String.length(suffix), do: String.replace_suffix(r2, suffix, "ous"), else: ""
+
+        r1 =
+          if String.length(r1) >= String.length(suffix),
+            do: String.replace_suffix(r1, suffix, "ous"),
+            else: ""
+
+        r2 =
+          if String.length(r2) >= String.length(suffix),
+            do: String.replace_suffix(r2, suffix, "ous"),
+            else: ""
 
         {word, r1, r2}
 
       suffix when suffix in ["iveness", "iviti"] ->
         word = String.replace_suffix(word, suffix, "ive")
-        r1 = if String.length(r1) >= String.length(suffix), do: String.replace_suffix(r1, suffix, "ive"), else: ""
-        r2 = if String.length(r2) >= String.length(suffix), do: String.replace_suffix(r2, suffix, "ive"), else: "e"
+
+        r1 =
+          if String.length(r1) >= String.length(suffix),
+            do: String.replace_suffix(r1, suffix, "ive"),
+            else: ""
+
+        r2 =
+          if String.length(r2) >= String.length(suffix),
+            do: String.replace_suffix(r2, suffix, "ive"),
+            else: "e"
 
         {word, r1, r2}
 
       suffix when suffix in ["biliti", "bli"] ->
         word = String.replace_suffix(word, suffix, "ble")
-        r1 = if String.length(r1) >= String.length(suffix), do: String.replace_suffix(r1, suffix, "ble"), else: ""
-        r2 = if String.length(r2) >= String.length(suffix), do: String.replace_suffix(r2, suffix, "ble"), else: ""
+
+        r1 =
+          if String.length(r1) >= String.length(suffix),
+            do: String.replace_suffix(r1, suffix, "ble"),
+            else: ""
+
+        r2 =
+          if String.length(r2) >= String.length(suffix),
+            do: String.replace_suffix(r2, suffix, "ble"),
+            else: ""
 
         {word, r1, r2}
 
       "ogi" ->
-        if String.at(word,-4) == "l" do
+        if String.at(word, -4) == "l" do
           {String.slice(word, 0..-2), String.slice(r1, 0..-2), String.slice(r2, 0..-2)}
         else
           {word, r1, r2}
         end
 
       suffix when suffix in ["fulli", "lessli"] ->
-        {String.replace_suffix(word, "li", ""), String.replace_suffix(r1, "li", ""), String.replace_suffix(r2, "li", "")}
+        {String.replace_suffix(word, "li", ""), String.replace_suffix(r1, "li", ""),
+         String.replace_suffix(r2, "li", "")}
 
       "li" ->
         if String.at(word, -3) in @valid_li_ending do
-          {String.replace_suffix(word, "li", ""), String.replace_suffix(r1, "li", ""), String.replace_suffix(r2, "li", "")}
+          {String.replace_suffix(word, "li", ""), String.replace_suffix(r1, "li", ""),
+           String.replace_suffix(r2, "li", "")}
         else
           {word, r1, r2}
         end
 
-      _ -> {word, r1, r2}
+      _ ->
+        {word, r1, r2}
     end
   end
 
@@ -391,12 +479,20 @@ defmodule Needlepoint.Stem.SnowballStemmer do
 
     case suffix do
       "tional" ->
-        {String.slice(word,0..-3), String.slice(r1,0..-3), String.slice(r2,0..-3)}
+        {String.slice(word, 0..-3), String.slice(r1, 0..-3), String.slice(r2, 0..-3)}
 
       "ational" ->
         word = String.replace_suffix(word, suffix, "ate")
-        r1 = if String.length(r1) >= String.length(suffix), do: String.replace_suffix(r1, suffix, "ate"), else: ""
-        r2 = if String.length(r2) >= String.length(suffix), do: String.replace_suffix(r2, suffix, "ate"), else: ""
+
+        r1 =
+          if String.length(r1) >= String.length(suffix),
+            do: String.replace_suffix(r1, suffix, "ate"),
+            else: ""
+
+        r2 =
+          if String.length(r2) >= String.length(suffix),
+            do: String.replace_suffix(r2, suffix, "ate"),
+            else: ""
 
         {word, r1, r2}
 
@@ -405,8 +501,16 @@ defmodule Needlepoint.Stem.SnowballStemmer do
 
       suffix when suffix in ["icate", "iciti", "ical"] ->
         word = String.replace_suffix(word, suffix, "ic")
-        r1 = if String.length(r1) >= String.length(suffix), do: String.replace_suffix(r1, suffix, "ic"), else: ""
-        r2 = if String.length(r2) >= String.length(suffix), do: String.replace_suffix(r2, suffix, "ic"), else: ""
+
+        r1 =
+          if String.length(r1) >= String.length(suffix),
+            do: String.replace_suffix(r1, suffix, "ic"),
+            else: ""
+
+        r2 =
+          if String.length(r2) >= String.length(suffix),
+            do: String.replace_suffix(r2, suffix, "ic"),
+            else: ""
 
         {word, r1, r2}
 
@@ -416,12 +520,13 @@ defmodule Needlepoint.Stem.SnowballStemmer do
 
       "ative" ->
         if String.ends_with?(r2, "ative") do
-          {String.slice(word,0..-6), String.slice(r1,0..-6), String.slice(r2,0..-6)}
+          {String.slice(word, 0..-6), String.slice(r1, 0..-6), String.slice(r2, 0..-6)}
         else
           {word, r1, r2}
         end
 
-      _ -> {word, r1, r2}
+      _ ->
+        {word, r1, r2}
     end
   end
 
@@ -433,13 +538,16 @@ defmodule Needlepoint.Stem.SnowballStemmer do
       end
 
     case suffix do
-      nil -> {word, r1, r2}
+      nil ->
+        {word, r1, r2}
+
       "ion" ->
         if String.at(word, -4) in ["s", "t"] do
-          {String.slice(word,0..-4), String.slice(r1,0..-4), String.slice(r2,0..-4)}
+          {String.slice(word, 0..-4), String.slice(r1, 0..-4), String.slice(r2, 0..-4)}
         else
           {word, r1, r2}
         end
+
       _ ->
         idx = String.length(suffix) + 1
         {String.slice(word, 0..-idx), String.slice(r1, 0..-idx), String.slice(r2, 0..-idx)}
@@ -449,19 +557,18 @@ defmodule Needlepoint.Stem.SnowballStemmer do
   defp step5({word, r1, r2}) do
     cond do
       String.ends_with?(r2, "l") and String.at(word, -2) == "l" ->
-        {String.slice(word,0..-2), r1, r2}
+        {String.slice(word, 0..-2), r1, r2}
 
       String.ends_with?(r2, "e") ->
-        {String.slice(word,0..-2), r1, r2}
+        {String.slice(word, 0..-2), r1, r2}
 
       String.ends_with?(r1, "e") and
-      String.length(word) >= 4 and
-      (String.at(word,-2) in @vowels or
-      String.at(word,-2) in ["w","x","Y"] or
-      String.at(word,-3) not in @vowels or
-      String.at(word,-4) in @vowels)
-      ->
-        {String.slice(word,0..-2), r1, r2}
+        String.length(word) >= 4 and
+          (String.at(word, -2) in @vowels or
+             String.at(word, -2) in ["w", "x", "Y"] or
+             String.at(word, -3) not in @vowels or
+             String.at(word, -4) in @vowels) ->
+        {String.slice(word, 0..-2), r1, r2}
 
       true ->
         {word, r1, r2}

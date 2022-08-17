@@ -1,0 +1,137 @@
+# Needlepoint
+
+## Dependencies
+
+```elixir
+Mix.install([
+  {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", branch: "main", sparse: "nx"}
+])
+```
+
+## Doing Things with Words
+
+```elixir
+s = "The important insight of representational materialism is that we are built on the 
+principles of texts, of words made flesh, and that a complex trade-off must be made between 
+what a sentence means in the text of one's life and what it means as such."
+
+s = "Thomas Jefferson began building Monticello at the age of 26."
+```
+
+```elixir
+# the simplest tokenizer
+tokens = String.split(s)
+num_tokens = length(tokens)
+```
+
+So the text is split but are these pieces meaningful?
+
+```elixir
+# vocab is all the unique words in a text.
+vocab = MapSet.new(tokens) |> Enum.sort()
+vocab_size = length(vocab)
+```
+
+```elixir
+# make an empty tensor - each column is a word in the vocab - each row is its position 
+# in the original sentence.
+# onehot_encoding = Nx.broadcast(0, {num_tokens, vocab_size})
+
+# get all the coordinates where there should be ones
+hots =
+  Enum.with_index(tokens, fn word, idx ->
+    [idx, Enum.find_index(vocab, fn x -> x == word end)]
+  end)
+
+# now we make a tensore where the columns are the vocab and the row indicates where
+# the word is in the original text.
+onehot_encoding =
+  Enum.reduce(
+    hots,
+    Nx.broadcast(0, {num_tokens, vocab_size}),
+    fn elem, acc -> Nx.put_slice(acc, Nx.tensor([[1]]), elem) end
+  )
+```
+
+For example the first row in the tensor is `[0, 0, 0, 1, 0, 0, 0, 0, 0, 0]`
+The 4th column in `vocab[3]` is "Thomas" so this tell us that the first word in our original
+sentence is "Thomas", which is correct.  From this table we can reconstruct the exact input
+sentence, but it uses a lot of space.
+
+```elixir
+# frequency counts for a string 
+s |> String.split() |> Enum.frequencies() |> Enum.sort()
+```
+
+```elixir
+sentences = """
+Thomas Jefferson began building Monticello at the age of 26.
+Construction was done mostly by local masons and carpenters.
+He moved into the South Pavilion in 1770.
+Turning Monticello into a neoclassical masterpiece was Jefferson's obsession.
+"""
+
+corpus_map =
+  String.split(sentences, "\n")
+  |> Enum.map(fn x -> x |> String.split() |> Enum.frequencies() |> Map.keys() |> Enum.sort() end)
+  |> Enum.reject(&Enum.empty?/1)
+```
+
+Now we would like to construct a vector where the columns represent the words and each row
+represents one of these sentences, with a 1 in the colum if the word is present in the sentence.
+
+First we will make a sorted list of every word in all of the sentences.
+
+Then for each sentence we will encode a vector that has a 0 if the word is not in the sentence
+and a 1 if the word is not for each position.
+
+```elixir
+# all words in all sentences, sorted.
+corpus_vocab =
+  sentences
+  |> String.split()
+  |> MapSet.new()
+  |> Enum.sort()
+
+# for each sentence
+binary_vectors =
+  for word_bag <- corpus_map,
+      do:
+        Enum.map(
+          # for each word in the overall vocabulary
+          corpus_vocab,
+          # return a 1 if the vocab word is in the sentence, or a 0 if it is not.
+          fn word ->
+            case Enum.find_index(word_bag, fn x -> x == word end) do
+              x when is_number(x) -> 1
+              _ -> 0
+            end
+          end
+        )
+```
+
+```elixir
+# now we can make them tensors and use dot product to see how many words overlap
+# in each sentence.
+
+# convert to tensors
+txs = binary_vectors |> Enum.map(&Nx.tensor/1)
+
+# sentence 1 and 2 share no words
+IO.puts(Nx.dot(Enum.at(txs, 0), Enum.at(txs, 1)) |> Nx.to_scalar())
+
+# sentence 1 and 3 share one word
+Nx.dot(Enum.at(txs, 0), Enum.at(txs, 2)) |> Nx.to_scalar()
+```
+
+## Tokenization
+
+Tokenization is splitting some text into pieces of text, "tokens."
+
+```elixir
+# the simplest tokenizer
+IO.inspect(String.split(s))
+
+# using regular expressions for more power
+IO.inspect(String.split(s, ~r{[-\s.,;!?]+}))
+```
